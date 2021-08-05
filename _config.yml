@@ -22,13 +22,13 @@ title: Matt's IT blog
 email: tingyugenius@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   to be finished
-# baseurl: "" # the subpath of your site, e.g. /blog
+baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://tingyugenius.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  tingyuchang
 
 # Build settings
-# theme: minima
-theme: jekyll-theme-midnight
+theme: minima
+#theme: jekyll-theme-midnight
 plugins:
   - jekyll-feed
 
