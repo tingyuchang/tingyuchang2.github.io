@@ -1,7 +1,8 @@
 ---
-layout: page
+layout: post
 title: Slice Study
-permalink: /golang/slice-study
+date:   2021-08-05 16:30:25 +0800
+categories: golang
 ---
 # Slice 的研究
 
@@ -9,11 +10,11 @@ permalink: /golang/slice-study
 
 Array 類似其他語言的定義，但是在 Golang 中 Array type 必須定義長度以及元素的類型
 
-```go
+{% highlight go %}
 var a [4]int
 a[0] = 1
 i := a[0] // i == 1
-```
+{% endhighlight %}
 
 Array 的長度是固定的，因此，不同長度的 Array 是不一樣的類型
 
