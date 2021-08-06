@@ -1,20 +1,14 @@
----
-layout: post
-title: Slice Study
-date:   2021-08-05 16:30:25 +0800
-categories: golang
----
 # Slice 的研究
 
 在 Golang 中，有 Array and Slice 這兩種 type。
 
 Array 類似其他語言的定義，但是在 Golang 中 Array type 必須定義長度以及元素的類型
 
-{% highlight go %}
+```go
 var a [4]int
 a[0] = 1
 i := a[0] // i == 1
-{% endhighlight %}
+```
 
 Array 的長度是固定的，因此，不同長度的 Array 是不一樣的類型
 
@@ -114,7 +108,9 @@ b = b[:cap(b)]
 // [3,4,5,6,7,8,9]
 ```
 
-為什麼 b 跟 c 的行為不一樣了呢？這是因為 c 的 append 發現 c 的 capacity 不夠了，因此觸發了 growslice 這一個 func ，重新產生了一組新的 underlying array 給他，這個時候 b, c 兩者的 underlying array 已經不同了。
+為什麼 b 跟 c 的行為不一樣了呢？這是因為 c 的 append 發現 c 的 capacity 不夠了，因此觸發了
+
+growslice 這一個 func ，重新產生了一組新的 underlying array 給他，這個時候 b, c 兩者的 underlying array 已經不同了。
 
 其中運作的原理，可以看看 [growslice](https://github.com/golang/go/blob/4bb0847b088eb3eb6122a18a87e1ca7756281dcc/src/runtime/slice.go#L162) 這一段 source code 
 
@@ -136,7 +132,6 @@ b = b[:cap(b)]
 
 計算完新的 cap 之後，就會把目前 array 內的元素複製到新的 array 中
 
---- 
 接下來談談 slice 中傳遞資料的問題
 
 ## Call by Value
@@ -378,8 +373,6 @@ func BenchmarkWithoutPointer(b *testing.B) {
 
 BTW: 這裡提到的使用 Slice of Struct 比較好跟 [Struct Method 使用 Pointer 比較好](https://golang.org/doc/faq#methods_on_values_or_pointers)是不同的概念
 
----
-
 ### Insert: Append vs Copy
 
 上面有提到在 slice 中 insert 元素，有的時候 copy 會比 append 來得有效率，這其實是出自 [SliceTricks](https://github.com/golang/go/wiki/SliceTricks) 中的一段解釋:
@@ -423,7 +416,74 @@ BenchmarkInsertByAppend-8   	 3905568	       295.0 ns/op	     672 B/op	       2 
 BenchmarkInsertByCopy-8     	 7681284	       156.8 ns/op	     352 B/op	       1 allocs/op
 ```
 
-### 結論：（寫在最後面就是希望不要只看結論，要看程式碼去理解）
+### 再來一些範例
+
+```go
+type path []byte
+
+func (p *path) TruncateAtFinalSlash() {
+    i := bytes.LastIndex(*p, []byte("/"))
+    if i >= 0 {
+        *p = (*p)[0:i]
+    }
+}
+
+func main() {
+    pathName := path("/usr/bin/tso") // Conversion from string to path.
+    pathName.TruncateAtFinalSlash()
+    fmt.Printf("%s\n", pathName)
+		// /usr/bin
+}
+```
+
+```go
+type path []byte
+
+func (p path) ToUpper() {
+    for i, b := range p {
+        if 'a' <= b && b <= 'z' {
+            p[i] = b + 'A' - 'a'
+        }
+    }
+}
+
+func main() {
+    pathName := path("/usr/bin/tso")
+    pathName.ToUpper()
+    fmt.Printf("%s\n", pathName)
+		// /USR/BIN/TSO
+}
+```
+
+上面兩個 method 的目的不同 TruncateAtFinalSlash 是要改變 path 的長度，找到最後一個 '/' 後，讓 path 縮短成為 /usr/bin，而 ToUpper 則是每一個字都改成大寫。
+
+TruncateAtFinalSlash 使用的是指標，在呼叫的時候，雖然是 copy 指標的數值，不過指標本身仍然會指向同一個 slice struct ，進而去改變這個 slice 的 metadata。
+
+ToUpper 也同樣複製了 slice ，但是因為指向的是同一個 underlying array ，所以透過 index of slice 去修改 underlying array 的元素，達成原本的目的。
+
+btw 其實 ToUpper 也可以用 *path 來執行，不過要寫成 *p 
+
+```go
+func (p *path) ToUpper() {
+    for i, b := range *p {
+        if 'a' <= b && b <= 'z' {
+            (*p)[i] = b + 'A' - 'a' //  string 也是 byte 
+        }
+    }
+}
+```
+
+### 關於 Slice 的 nil
+
+empty slice 不見得是 nil ，雖然 len = 0 ，但是 cap 以及 ptr 都可能指向一個不為空的 underlying array， nil slice 是指沒有指向任何一個 underlying array 的 slice 。
+
+### 關於 String
+
+String 是一個 read only 的 byte slice 。
+
+---
+
+## 結論
 
 1. 使用 slice 的時候，必須充分理解跟 underlying array 之間的關係，slice 不持有元素，只持有指標
 2. Append, copy 都可能會改變 slice 的 capacity 導致 realloc ，re-slice 只能改變 length of slice 
@@ -432,9 +492,11 @@ BenchmarkInsertByCopy-8     	 7681284	       156.8 ns/op	     352 B/op	       1 
 5. 直接傳遞 slice 的指標 (*[]Object) 也是不錯，可以參考 k8s 的做法
 6. Copy 處理得好，會比 Append 來得有效率 
 
+
 ### Reference
 
-- https://blog.golang.org/slices-intro
+- [https://blog.golang.org/slices-intro](https://blog.golang.org/slices-intro)
+- [https://blog.golang.org/slices](https://blog.golang.org/slices)
 - [https://github.com/golang/go/wiki/SliceTricks](https://github.com/golang/go/wiki/SliceTricks)
 - [https://medium.com/swlh/golang-tips-why-pointers-to-slices-are-useful-and-how-ignoring-them-can-lead-to-tricky-bugs-cac90f72e77b](https://medium.com/swlh/golang-tips-why-pointers-to-slices-are-useful-and-how-ignoring-them-can-lead-to-tricky-bugs-cac90f72e77b)
 - [https://medium.com/@opto_ej/there-are-other-nuances-one-should-consider-c798f12be15c](https://medium.com/@opto_ej/there-are-other-nuances-one-should-consider-c798f12be15c)
