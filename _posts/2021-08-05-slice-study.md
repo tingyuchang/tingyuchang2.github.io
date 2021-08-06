@@ -1,3 +1,10 @@
+---
+ layout: post
+ title: Slice Study
+ date:   2021-08-05 16:30:25 +0800
+ categories: golang
+---
+
 # Slice 的研究
 
 在 Golang 中，有 Array and Slice 這兩種 type。
