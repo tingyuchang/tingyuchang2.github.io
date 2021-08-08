@@ -92,9 +92,9 @@ Education
 Sep 2010 - Jun 2012
 :   **Nation Central University**
 
-    - Masters of Business Administration | Information Management
+    - Masters of Business Administration, Information Management
 
 Sep 2004 - Jun 2008
 :   **Nation Central University**
 
-    - Bachelor of Business Administration | Information Management
+    - Bachelor of Business Administration, Information Management
